@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบสืบค้นมาตรฐานการตรวจวัด - C.E.M Technology</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .premium-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-center p-3 md:p-6 transition-all duration-300">
+
+  <div id="loginSection" class="max-w-md w-full mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col">
+    <div class="premium-gradient p-6 text-center text-white border-b-4 border-amber-500">
+      <div class="text-xl font-extrabold tracking-wider text-amber-400 mb-0.5">C.E.M Technology (Thailand) Co.,Ltd.</div>
+      <h2 class="text-lg font-bold tracking-tight">ระบบสืบค้นมาตรฐานการตรวจวัด</h2>
+      <p class="text-xs text-slate-400 mt-1">กรุณาระบุชื่อ ของท่านเพื่อรับรหัส OTP ผ่านอีเมลลงทะเบียน</p>
+    </div>
+
+    <div class="p-6 md:p-8 space-y-5">
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">ชื่อ พนักงาน</label>
+        <div class="flex space-x-2">
+          <input type="text" id="userName" placeholder="พิมพ์ชื่อ"
+                 class="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition">
+          <button id="requestOtpBtn" onclick="requestOTP()" class="px-4 py-2.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition duration-150 shadow shrink-0 focus:outline-none">
+            ขอรหัส OTP
+          </button>
+        </div>
+        <p id="nameError" class="text-rose-500 text-xs font-semibold mt-1 hidden">❌ ไม่พบข้อมูลชื่อพนักงานท่านนี้ในระบบ</p>
+      </div>
+
+      <div id="loadingStatus" class="hidden items-center space-x-2 text-xs font-semibold text-blue-700 bg-blue-50 p-2.5 rounded-lg border border-blue-100">
+        <div class="animate-spin w-4 h-4 border-2 border-blue-700 rounded-full border-t-transparent"></div>
+        <span id="loadingText">กำลังตรวจสอบข้อมูลชื่อพนักงาน...</span>
+      </div>
+
+      <div id="otpArea" class="hidden space-y-4 pt-2 border-t border-slate-100">
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">ระบุรหัส OTP 6 หลัก (ส่งเข้าอีเมลแล้ว)</label>
+            <span id="countdownText" class="text-xs font-semibold text-slate-400"></span>
+          </div>
+          <input type="text" id="otpKey" placeholder="• • • • • •" maxLength="6"
+                 class="w-full text-center tracking-widest text-lg font-bold px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-sm transition" autocomplete="off">
+          <p id="otpError" class="text-rose-500 text-xs font-semibold mt-1 hidden">❌ รหัส OTP ไม่ถูกต้องหรือหมดอายุ</p>
+        </div>
+
+        <button onclick="verifyOTP()" class="w-full py-3 premium-gradient text-white font-bold rounded-lg hover:opacity-95 transition duration-200 text-sm shadow-md uppercase tracking-wider flex items-center justify-center space-x-1 focus:outline-none">
+          <span>🔓 ยืนยันเข้าสู่ระบบ</span>
+        </button>
+      </div>
+    </div>
+</div>
+
+
+  <div id="mainDashboardSection" class="w-full mx-auto bg-white rounded-2xl shadow-xl overflow-hidden mt-1 border border-slate-100 hidden">
+    
+    <div class="premium-gradient text-white p-6 relative md:flex justify-between items-center border-b-4 border-amber-500">
+      <div class="mb-4 md:mb-0 text-center md:text-left">        
+        <h1 class="text-xl md:text-2xl font-extrabold tracking-tight">ระบบสืบค้นมาตรฐานการตรวจวัด</h1>
+        <p class="text-xs text-slate-300 mt-1 font-light">ฐานข้อมูลขอบข่ายการทดสอบและพารามิเตอร์สิ่งแวดล้อม</p>
+        <span id="userDisplayTag" class="inline-block mt-2 px-2.5 py-0.5 bg-blue-900/60 border border-blue-700 text-amber-400 text-[11px] font-bold rounded">👤 ผู้ใช้งาน: พนักงานในระบบ</span>
+      </div>
+      <div class="flex flex-col items-center md:items-end space-y-2">
+        <div class="text-center md:text-right">
+          <div class="text-md font-bold tracking-wider text-amber-400">C.E.M Technology</div>
+          <div class="text-[10px] font-medium text-slate-300 uppercase tracking-widest">(Thailand) Co.,Ltd.</div>
+        </div>
+        <button onclick="logout()" class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded shadow transition flex items-center space-x-1 focus:outline-none">
+          <span>🔒 ออกจากระบบ (Logout)</span>
+        </button>
+      </div>
+    </div>
+    
+    <div class="p-4 md:p-6">
+      <div class="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200/80 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">1. หมวดสิ่งแวดล้อมหลัก</label>
+            <select id="sheetNameSelect" onchange="loadCategoryData()" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer transition">
+              <option value="water">💧 Water (น้ำ)</option>
+              <option value="Soil">🌱 Soil (ดิน)</option>
+              <option value="Industrial Waste">📦 Industrial Waste (กากอุตฯ)</option>
+              <option value="stack">🏭 Stack (ปล่อง)</option>
+              <option value="Ambient">🍃 Ambient (บรรยากาศ)</option>            
+              <option value="workplace">🏢 Workplace (สภาพแวดล้อมทำงาน)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">2. ค้นหาเฉพาะเจาะจงจาก</label>
+            <select id="searchType" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition">
+              <option value="รายการตรวจวัด">📋 รายการตรวจวัด / พารามิเตอร์</option>
+              <option value="CAS">🧪 CAS Number</option>
+              <option value="Synonym">📝 Synonym (ชื่อพ้อง)</option>
+              <option value="มาตรฐานวิธีการเก็บตัวอย่าง">🔬 มาตรฐานวิธีการเก็บตัวอย่าง</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">3. พิมพ์คำค้นหาบางส่วน</label>
+            <div class="flex space-x-2">
+              <input type="text" id="searchKey" oninput="runLocalSearch()" placeholder="พิมพ์ชื่อสาร, เลข CAS, เลขวิธี..." 
+                     class="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm transition" autocomplete="off">
+              <button onclick="runLocalSearch()" class="px-5 py-2.5 bg-blue-700 text-white font-semibold rounded-lg hover:bg-blue-800 transition duration-200 text-sm shadow flex items-center space-x-1">
+                <span>ค้นหา</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="loading" class="hidden text-center text-slate-500 my-10 py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+        <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-700 rounded-full border-t-transparent mb-3"></div>
+        <div class="text-sm font-semibold text-blue-900">กำลังสืบค้นและดึงข้อมูลยกแผงจากระบบกูเกิลคลาวด์...</div>
+      </div>
+
+      <div id="resultArea" class="hidden border-t border-slate-100 pt-2">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3.5 space-y-2 sm:space-y-0">
+          <div>
+            <span class="inline-flex items-center text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-md border border-slate-200">
+              พบพารามิเตอร์รวมในหมวดนี้: <span id="matchCount" class="text-blue-700 font-extrabold mx-1 text-sm">0</span> รายการ
+            </span>
+          </div>
+          <div class="text-right">
+            <span class="text-xs bg-blue-50 text-blue-800 border border-blue-200 font-semibold px-2.5 py-1.5 rounded-md" id="pageIndicator">หน้า 1 จาก 1</span>
+          </div>
+        </div>
+        
+        <div class="overflow-x-auto border border-slate-200 rounded-xl shadow-sm mb-4">
+          <table class="min-w-full divide-y divide-slate-200 text-sm text-left">
+            <thead class="bg-slate-900 text-slate-200 text-xs font-bold uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-4">รายการตรวจวัด / รายการทดสอบ</th>
+                <th class="px-4 py-4 text-center">ประเภท</th>
+                <th class="px-5 py-4">มาตรฐานวิธีการเก็บตัวอย่าง</th>
+                <th class="px-4 py-4 text-center">CAS Number</th>
+                <th class="px-4 py-4 text-center">สถานะ</th>
+                <th class="px-5 py-4 text-center">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-between items-center bg-slate-900 text-white p-3.5 rounded-xl shadow-md border border-slate-800 mt-4">
+          <button id="prevPageBtn" onclick="changePage(-1)" class="px-5 py-2 bg-white text-blue-900 border-2 border-blue-900 hover:bg-slate-100 font-extrabold rounded-lg transition duration-150 text-xs shadow-sm uppercase tracking-wider disabled:opacity-20 disabled:cursor-not-allowed">Back</button>
+          <div class="text-xs text-slate-300 font-semibold tracking-wide hidden sm:block" id="paginationSummary">แสดงรายการ 1-30</div>
+          <button id="nextPageBtn" onclick="changePage(1)" class="px-5 py-2 bg-white text-blue-900 border-2 border-blue-900 hover:bg-slate-100 font-extrabold rounded-lg transition duration-150 text-xs shadow-sm uppercase tracking-wider disabled:opacity-20 disabled:cursor-not-allowed">Next</button>
+        </div>
+      </div>
+      
+      <div id="notFound" class="hidden text-center text-rose-600 my-6 p-5 bg-rose-50 rounded-xl border border-rose-200 text-sm font-semibold">
+        ❌ ไม่พบข้อความหรือพารามิเตอร์ที่ตรงกับเงื่อนไขในหมวดนี้
+      </div>
+    </div>
+
+    <div class="bg-slate-50 border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500 font-medium">
+      &copy; 2026 <span class="text-slate-800 font-bold">C.E.M Technology (Thailand) Co.,Ltd.</span> All Rights Reserved.
+    </div>
+  </div>
+
+  <div id="detailsModal" class="fixed inset-0 bg-slate-900 bg-opacity-60 z-50 flex items-start justify-center p-4 md:p-10 hidden backdrop-blur-sm overflow-y-auto custom-scrollbar">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full my-auto overflow-hidden border border-slate-200">
+      <div class="bg-blue-950 px-6 py-4 flex justify-between items-center text-white border-b-2 border-amber-500">
+        <div>
+          <span class="text-xs text-blue-300 font-bold block uppercase tracking-wider mb-0.5">📊 รายละเอียดและข้อกำหนดเกณฑ์มาตรฐานทั้งหมด</span>
+          <h3 id="modalTitle" class="text-xl font-bold tracking-tight"></h3>
+        </div>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-white text-xl font-semibold bg-blue-900 hover:bg-gray-800 w-8 h-8 rounded-full flex items-center justify-center focus:outline-none transition">✕</button>
+      </div>
+      <div class="p-6 bg-slate-50">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5" id="modalContent"></div>
+      </div>
+      <div class="bg-gray-100 px-6 py-3.5 flex justify-between items-center border-t border-gray-200 text-xs text-gray-500 font-medium">
+        <div>C.E.M Technology (Thailand) Co.,Ltd.</div>
+        <button onclick="closeModal()" class="px-5 py-2 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-800 transition">ปิดหน้าต่างข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 🚨 เชื่อมต่อ URL ล่าสุดของพี่
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbxX5nw42vz1udskqX2gpHnyQSXwlrgKKHguvSbUJY3Ts2tYpFirKoAD8IWXyi5eEh8Nlg/exec";
+    
+    let countdownTimer = null;
+    let CATEGORY_ALL_DATA = []; 
+    let FILTERED_DATA = [];     
+    let currentPage = 1;        
+    const rowsPerPage = 30; 
+
+    // 🕐 ตั้งเวลาความปลอดภัย: 12 ชั่วโมงเป็นมิลลิวินาที (12 * 60 * 60 * 1000)
+    const EXPIRE_TIME_MS = 12 * 60 * 60 * 1000; 
+
+    // 🚀 ฟังก์ชันหลักสำหรับตรวจสอบสถานะล็อกอินเมื่อเปิดเบราว์เซอร์
+    function checkAuthStatus() {
+      const loginTimestamp = localStorage.getItem('cem_login_time');
+      const savedUser = localStorage.getItem('cem_user_name');
+      const now = new Date().getTime();
+
+      if (loginTimestamp && savedUser) {
+        // ตรวจสอบว่าเกิน 12 ชั่วโมงหรือยัง
+        if (now - parseInt(loginTimestamp) < EXPIRE_TIME_MS) {
+          showDashboard(savedUser);
+          return;
+        }
+      }
+      // หากยังไม่ได้ล็อกอิน หรือหมดอายุแล้ว ให้บังคับกลับไปหน้า Login
+      logoutWithoutAlert();
+    }
+
+    function showDashboard(username) {
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('mainDashboardSection').classList.remove('hidden');
+      document.getElementById('userDisplayTag').innerText = `👤 ผู้ใช้งาน: คุณ ${username}`;
+      
+      // ปรับรูปแบบ Body ให้กางเต็มหน้าเมื่อเข้าตารางสืบค้นข้อมูล
+      document.body.classList.remove('items-center'); 
+      
+      // โหลดข้อมูลอัตโนมัติเมื่อผ่านด่าน Loginสำเร็จ
+      loadCategoryData();
+    }
+
+    function logout() {
+      localStorage.removeItem('cem_login_time');
+      localStorage.removeItem('cem_user_name');
+      alert("🔒 ออกจากระบบเรียบร้อยแล้ว หรือเซสชันหมดอายุ (ครบ 12 ชั่วโมง)");
+      location.reload(); 
+    }
+
+    function logoutWithoutAlert() {
+      localStorage.removeItem('cem_login_time');
+      localStorage.removeItem('cem_user_name');
+      document.getElementById('loginSection').classList.remove('hidden');
+      document.getElementById('mainDashboardSection').classList.add('hidden');
+      document.body.classList.add('items-center'); 
+    }
+
+    // ==========================================
+    // 🔐 AUTH PROCESS (ขอ OTP / ยืนยัน OTP)
+    // ==========================================
+    function requestOTP() {
+      const nameInput = document.getElementById('userName').value.trim();      
+      const loadStatus = document.getElementById('loadingStatus');
+      const loadingText = document.getElementById('loadingText');
+      const otpArea = document.getElementById('otpArea');
+      const otpBtn = document.getElementById('requestOtpBtn');
+      const nameError = document.getElementById('nameError');
+
+      if (!nameInput) {
+        nameError.innerText = "❌ กรุณากรอกชื่อ-นามสกุลพนักงาน";
+        nameError.classList.remove('hidden');
+        return;
+      }
+      
+      nameError.classList.add('hidden');
+      loadingText.innerText = "กำลังตรวจสอบฐานข้อมูลและส่งเมล OTP...";
+      loadStatus.classList.remove('hidden');
+      otpBtn.disabled = true;
+
+      fetch(webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'request', name: nameInput })
+      })
+      .then(res => res.json())
+      .then(response => {
+        loadStatus.classList.add('hidden');
+        if (response.success) {
+          otpArea.classList.remove('hidden');
+          startCountdown(120); 
+          alert("✉️ ส่งรหัส OTP เรียบร้อย! ตรวจสอบที่อีเมล " + response.email);
+        } else {
+          otpBtn.disabled = false;
+          nameError.innerText = "❌ " + response.message;
+          nameError.classList.remove('hidden');
+        }
+      })
+      .catch(err => {
+        loadStatus.classList.add('hidden');
+        otpBtn.disabled = false;
+        alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
+      });
+    }
+
+    function startCountdown(seconds) {
+      clearInterval(countdownTimer);
+      const textDisplay = document.getElementById('countdownText');
+      const otpBtn = document.getElementById('requestOtpBtn');
+      let timeLeft = seconds;
+      
+      countdownTimer = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(countdownTimer);
+          textDisplay.innerText = "รหัส OTP หมดอายุแล้ว";
+          textDisplay.className = "text-xs font-semibold text-rose-500";
+          otpBtn.disabled = false;
+          otpBtn.innerText = "ขอรหัสใหม่";
+        } else {
+          textDisplay.innerText = `รหัสจะหมดอายุใน (${timeLeft} วินาที)`;
+          textDisplay.className = "text-xs font-semibold text-amber-600";
+          timeLeft--;
+        }
+      }, 1000);
+    }
+
+    function verifyOTP() {
+      const nameInput = document.getElementById('userName').value.trim();
+      const otpKey = document.getElementById('otpKey').value.trim();
+      const otpError = document.getElementById('otpError');
+      const loadStatus = document.getElementById('loadingStatus');
+      const loadingText = document.getElementById('loadingText');
+
+      if (otpKey.length < 6) {
+        otpError.innerText = "❌ กรุณากรอกรหัสเลขหลักให้ครบทั้ง 6 ตัว";
+        otpError.classList.remove('hidden');
+        return;
+      }
+
+      otpError.classList.add('hidden');
+      loadingText.innerText = "กำลังทำการตรวจสอบรหัส...";
+      loadStatus.classList.remove('hidden');
+
+      fetch(webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'verify', name: nameInput, otp: otpKey })
+      })
+      .then(res => res.json())
+      .then(response => {
+        loadStatus.classList.add('hidden');
+        if (response.success) {
+          otpError.classList.add('hidden');
+          clearInterval(countdownTimer);
+          
+          // ⏱️ บันทึกเวลาล็อกอินและข้อมูลลงคลังเบราว์เซอร์
+          const loginTime = new Date().getTime();
+          localStorage.setItem('cem_login_time', loginTime);
+          localStorage.setItem('cem_user_name', nameInput);
+          
+          alert("🎉 ยืนยันสิทธิ์ถูกต้องปลอดภัย! ยินดีต้อนรับเข้าสู่ระบบ");
+          showDashboard(nameInput);
+        } else {
+          otpError.innerText = "❌ " + response.message;
+          otpError.classList.remove('hidden');
+        }
+      })
+      .catch(err => {
+        loadStatus.classList.add('hidden');
+        alert("เกิดข้อผิดพลาดในการประมวลผล");
+      });
+    }
+
+    // ==========================================
+    // 📊 DATA SEARCH PROCESS (การดึงและสืบค้นข้อมูล)
+    // ==========================================
+    function getValueByFlexibleKey(item, keyName) {
+      if (!item) return '';
+      const cleanKeyName = keyName.replace(/\s+/g, '').toLowerCase();
+      const targetKey = Object.keys(item).find(k => k.replace(/\s+/g, '').toLowerCase().includes(cleanKeyName));
+      return targetKey ? item[targetKey] : '';
+    }
+
+    function displayTablePage() {
+      const tableBody = document.getElementById('tableBody');
+      tableBody.innerHTML = '';
+      
+      if (FILTERED_DATA.length === 0) {
+        document.getElementById('resultArea').classList.add('hidden');
+        document.getElementById('notFound').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('notFound').classList.add('hidden');
+      document.getElementById('resultArea').classList.remove('hidden');
+      document.getElementById('matchCount').innerText = FILTERED_DATA.length;
+
+      const totalPages = Math.ceil(FILTERED_DATA.length / rowsPerPage) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * rowsPerPage;
+      const endIndex = Math.min(startIndex + rowsPerPage, FILTERED_DATA.length);
+      const pageItems = FILTERED_DATA.slice(startIndex, endIndex);
+
+      pageItems.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition duration-150 border-b border-slate-100';
+        const itemString = encodeURIComponent(JSON.stringify(item));
+
+        const itemName = getValueByFlexibleKey(item, 'รายการตรวจวัด') || getValueByFlexibleKey(item, 'รายการทดสอบ') || '-';
+        const itemType = getValueByFlexibleKey(item, 'ประเภท') || '-';
+        const itemMethod = getValueByFlexibleKey(item, 'มาตรฐานวิธีการเก็บตัวอย่าง') || '-';
+        const itemCas = getValueByFlexibleKey(item, 'CAS') || '-';
+        const itemLab = getValueByFlexibleKey(item, 'Lab ทดสอบ') || '-'; 
+
+        let statusBadge = !itemLab || itemLab === '' || itemLab === '-' 
+          ? `<span class="px-2 py-1 bg-slate-100 text-slate-400 rounded-md text-xs font-medium border border-slate-200">ไม่มีข้อมูล</span>`
+          : `<span class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-bold border border-emerald-200">🔬 ${itemLab}</span>`;
+
+        tr.innerHTML = `
+          <td class="px-5 py-3.5 font-bold text-slate-800 cursor-pointer hover:text-blue-700 hover:underline transition" onclick="openModal('${itemString}')">
+            🔍 ${itemName}
+          </td>
+          <td class="px-4 py-3.5 text-center">
+            <span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-bold border border-blue-100 shadow-sm">${itemType}</span>
+          </td>
+          <td class="px-5 py-3.5 text-slate-600 font-medium text-xs max-w-xs truncate">${itemMethod}</td>
+          <td class="px-4 py-3.5 text-center text-slate-700 font-mono text-xs font-semibold">${itemCas}</td>
+          <td class="px-4 py-3.5 text-center">${statusBadge}</td>
+          <td class="px-5 py-3.5 text-center">
+            <button onclick="openModal('${itemString}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-700 hover:text-white rounded-md text-xs font-bold transition shadow-sm border border-blue-200">
+              ดูรายละเอียด
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      document.getElementById('pageIndicator').innerText = `หน้า ${currentPage} จาก ${totalPages}`;
+      document.getElementById('paginationSummary').innerText = `แสดงรายการที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${FILTERED_DATA.length} รายการ`;
+      document.getElementById('prevPageBtn').disabled = (currentPage === 1);
+      document.getElementById('nextPageBtn').disabled = (currentPage === totalPages);
+    }
+
+    function runLocalSearch() {
+      const searchKey = document.getElementById('searchKey').value.trim().toLowerCase();
+      const searchType = document.getElementById('searchType').value;
+
+      if (!searchKey) {
+        FILTERED_DATA = [...CATEGORY_ALL_DATA];
+      } else {
+        FILTERED_DATA = CATEGORY_ALL_DATA.filter(item => {
+          let cellValueRaw = '';
+          if (searchType === 'รายการตรวจวัด') {
+            cellValueRaw = getValueByFlexibleKey(item, 'รายการตรวจวัด') || getValueByFlexibleKey(item, 'รายการทดสอบ');
+          } else if (searchType === 'CAS') {
+            cellValueRaw = getValueByFlexibleKey(item, 'CAS');
+          } else if (searchType === 'Synonym') {
+            cellValueRaw = getValueByFlexibleKey(item, 'Synonym') || getValueByFlexibleKey(item, 'ชื่อพ้อง');
+          } else if (searchType === 'มาตรฐานวิธีการเก็บตัวอย่าง') {
+            cellValueRaw = getValueByFlexibleKey(item, 'มาตรฐานวิธีการเก็บตัวอย่าง') || getValueByFlexibleKey(item, 'วิธีเก็บ');
+          }
+          const cellValue = cellValueRaw ? cellValueRaw.toString().toLowerCase().trim() : '';
+          return cellValue.includes(searchKey);
+        });
+      }
+      currentPage = 1; 
+      displayTablePage();
+    }
+
+    function loadCategoryData() {
+      // ป้องกันการทำงานหากยังไม่ได้ล็อกอินสำเร็จเพื่อความปลอดภัย
+      if(!localStorage.getItem('cem_user_name')) return;
+
+      const sheetSelectElement = document.getElementById('sheetNameSelect');
+      if (!sheetSelectElement) return; 
+      
+      const sheetName = sheetSelectElement.value.trim();
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('resultArea').classList.add('hidden');
+      document.getElementById('notFound').classList.add('hidden');
+      document.getElementById('searchKey').value = ""; 
+
+      const oldScript = document.getElementById('jsonpScript');
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement('script');
+      script.id = 'jsonpScript';
+      script.src = `${webAppUrl}?keyword=&sheetName=${encodeURIComponent(sheetName)}&callback=handleResponse`;
+      document.body.appendChild(script);
+    }
+
+    function handleResponse(results) {
+      document.getElementById('loading').classList.add('hidden');
+      const oldScript = document.getElementById('jsonpScript');
+      if (oldScript) oldScript.remove();
+
+      if (results && results.error) {
+        alert('พบข้อผิดพลาดจากฐานข้อมูล: ' + results.error);
+        return;
+      }
+
+      CATEGORY_ALL_DATA = Array.isArray(results) ? results : [];
+      FILTERED_DATA = [...CATEGORY_ALL_DATA]; 
+      currentPage = 1; 
+      displayTablePage(); 
+    }
+
+    function changePage(direction) {
+      currentPage += direction;
+      displayTablePage();
+      document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function openModal(encodedItem) {
+      const item = JSON.parse(decodeURIComponent(encodedItem));
+      const titleName = getValueByFlexibleKey(item, 'รายการตรวจวัด') || getValueByFlexibleKey(item, 'รายการทดสอบ') || 'รายละเอียด';
+      
+      document.getElementById('modalTitle').innerText = titleName;
+      const modalContent = document.getElementById('modalContent');
+      modalContent.innerHTML = '';
+
+      const detailFields = [
+        'Synonym', 'ประเภท', 'มาตรฐานวิธีการเก็บตัวอย่าง', 'CAS Number',
+        'ชนิด Filter / Tube', 'เครื่องมือหลักในการเก็บตัวอย่าง', 'วิธีการเก็บตัวอย่าง',
+        'วิธีการทดสอบ', 'เครื่องมือหลักในการทดสอบ', 'Update Method',
+        'สารมาตรฐาน (STD)', 'Lab ทดสอบ', 'ขึ้นทะเบียนกรมโรงงาน', 'ISO/IEC 17025', 'link', 'หมายเหตุ'
+      ];
+
+      detailFields.forEach(field => {
+        let searchKey = field === 'CAS Number' ? 'CAS' : field;
+        const valueRaw = getValueByFlexibleKey(item, searchKey);
+        let value = valueRaw ? valueRaw.toString().trim() : '';
+        if (!value || value === '' || value === '-') value = '-';
+
+        const itemRow = document.createElement('div');
+        
+        if (value !== '-' && (field.toLowerCase() === 'link' || value.startsWith('http://') || value.startsWith('https://'))) {
+          itemRow.className = 'bg-blue-50 p-3 rounded-lg border border-blue-200 shadow-sm col-span-1 md:col-span-2';
+          itemRow.innerHTML = `<span class="text-xs font-bold text-blue-500 block mb-1">🔗 ${field}</span>
+            <div class="text-sm mt-1"><a href="${value}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition">คลิกเปิดลิงก์เอกสารอ้างอิง ↗</a></div>`;
+        } else if (field === 'หมายเหตุ' && value !== '-') {
+          itemRow.className = 'bg-amber-50 p-3.5 rounded-xl border border-amber-200 shadow-sm col-span-1 md:col-span-2';
+          itemRow.innerHTML = `<span class="text-xs font-bold text-amber-800 block mb-1">📝 ${field}</span><div class="text-sm text-slate-800 font-bold">${value}</div>`;
+        } else if (field === 'ประเภท') {
+          itemRow.className = 'bg-blue-50 p-3.5 rounded-xl border border-blue-200 shadow-sm font-semibold';
+          itemRow.innerHTML = `<span class="text-xs font-bold text-blue-700 block mb-1">📌 ${field}</span><div class="text-sm text-blue-950 font-bold">${value}</div>`;
+        } else {
+          itemRow.className = 'bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm';
+          itemRow.innerHTML = `<span class="text-xs font-bold text-slate-400 block mb-1">📄 ${field}</span><div class="text-sm text-slate-800 font-bold">${value}</div>`;
+        }
+        modalContent.appendChild(itemRow);
+      });
+      document.getElementById('detailsModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('detailsModal').classList.add('hidden');
+    }
+
+    // 🛡️ ตรวจสอบความปลอดภัยทุกครั้งที่เว็บโหลด
+    document.addEventListener("DOMContentLoaded", function() {
+      checkAuthStatus();
+      
+      // เพิ่มระบบตรวจสอบเวลาต่อเนื่อง ทุก 1 นาที เพื่อสแกนหาตัวหมดอายุ 12 ชม. แบบ Realtime
+      setInterval(() => {
+        const loginTimestamp = localStorage.getItem('cem_login_time');
+        if (loginTimestamp) {
+          const now = new Date().getTime();
+          if (now - parseInt(loginTimestamp) >= EXPIRE_TIME_MS) {
+            logout();
+          }
+        }
+      }, 60000); 
+    });
+  </script>
+</body>
+</html>
