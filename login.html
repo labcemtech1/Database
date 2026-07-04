@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เข้าสู่ระบบความปลอดภัย - C.E.M Technology</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }
+    .premium-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+  <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col">
+    
+    <div class="premium-gradient p-6 text-center text-white border-b-4 border-amber-500">
+      <div class="text-xl font-extrabold tracking-wider text-amber-400 mb-0.5">C.E.M Technology</div>
+      <div class="text-xs font-medium text-slate-300 uppercase tracking-widest mb-4">(Thailand) Co.,Ltd.</div>
+      <h2 class="text-lg font-bold tracking-tight">ระบบสืบค้นมาตรฐานการตรวจวัด</h2>
+      <p class="text-xs text-slate-400 mt-1">กรุณาระบุชื่อ-นามสกุลของท่านเพื่อรับรหัส OTP ผ่านอีเมลลงทะเบียน</p>
+    </div>
+
+    <div class="p-6 md:p-8 space-y-5">
+      
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">ชื่อ - นามสกุล พนักงาน</label>
+        <div class="flex space-x-2">
+          <input type="text" id="userName" placeholder="พิมพ์ชื่อ นามสกุลไม่ต้องมีคำนำหน้า"
+                 class="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition">
+          
+          <button id="requestOtpBtn" onclick="requestOTP()" class="px-4 py-2.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition duration-150 shadow shrink-0 focus:outline-none">
+            ขอรหัส OTP
+          </button>
+        </div>
+        <p id="nameError" class="text-rose-500 text-xs font-semibold mt-1 hidden">❌ ไม่พบข้อมูลชื่อพนักงานท่านนี้ในระบบ</p>
+      </div>
+
+      <div id="loadingStatus" class="hidden items-center space-x-2 text-xs font-semibold text-blue-700 bg-blue-50 p-2.5 rounded-lg border border-blue-100">
+        <div class="animate-spin w-4 h-4 border-2 border-blue-700 rounded-full border-t-transparent"></div>
+        <span id="loadingText">กำลังตรวจสอบข้อมูลชื่อพนักงานและส่งอีเมล...</span>
+      </div>
+
+      <div id="otpArea" class="hidden space-y-4 pt-2 border-t border-slate-100">
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">ระบุรหัส OTP 6 หลัก (ส่งเข้าอีเมลแล้ว)</label>
+            <span id="countdownText" class="text-xs font-semibold text-slate-400"></span>
+          </div>
+          <input type="text" id="otpKey" placeholder="• • • • • •" maxLength="6"
+                 class="w-full text-center tracking-widest text-lg font-bold px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-sm transition" autocomplete="off">
+          <p id="otpError" class="text-rose-500 text-xs font-semibold mt-1 hidden">❌ รหัส OTP ไม่ถูกต้องหรือหมดอายุ</p>
+        </div>
+
+        <button onclick="verifyOTP()" class="w-full py-3 premium-gradient text-white font-bold rounded-lg hover:opacity-95 transition duration-200 text-sm shadow-md uppercase tracking-wider flex items-center justify-center space-x-1 focus:outline-none">
+          <span>🔓 ยืนยันเข้าสู่ระบบ</span>
+        </button>
+      </div>
+
+    </div>
+
+    <div class="bg-slate-50 border-t border-slate-100 py-3.5 px-6 text-center text-[11px] text-slate-400 font-medium">
+      ความปลอดภัยภายในสถาบันห้องปฏิบัติการ C.E.M
+    </div>
+  </div>
+
+  <script>
+    // 🚨 อย่าลืมตรวจสอบให้มั่นใจว่า URL นี้เป็น Web App deployment ล่าสุดของพี่ครับ
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbx_5hc65OKAqxXnRB1bEpxD4DZTW6Z-CnIytrMrNTqbohgwOjIIuJUjbOS3V-OKxGv6/exec";
+    let countdownTimer = null;
+
+    // 🚀 STEP 1: ส่งคำร้องขอตรวจสอบสิทธิ์ชื่อพนักงาน เพื่อยิงเมลรหัส OTP
+    function requestOTP() {
+      const nameInput = document.getElementById('userName').value.trim();      
+      const loadStatus = document.getElementById('loadingStatus');
+      const loadingText = document.getElementById('loadingText');
+      const otpArea = document.getElementById('otpArea');
+      const otpBtn = document.getElementById('requestOtpBtn');
+
+      if (!nameInput) {
+        nameError.innerText = "❌ กรุณากรอกชื่อ-นามสกุลพนักงาน";
+        nameError.classList.remove('hidden');
+        return;
+      }
+      
+      nameError.classList.add('hidden');
+      loadingText.innerText = "กำลังตรวจสอบฐานข้อมูลและส่งเมล OTP จริง...";
+      loadStatus.classList.remove('hidden');
+      otpBtn.disabled = true;
+
+      fetch(webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'request', name: nameInput })
+      })
+      .then(res => res.json())
+      .then(response => {
+        loadStatus.classList.add('hidden');
+        
+        if (response.success) {
+          otpArea.classList.remove('hidden');
+          startCountdown(120); // ให้เวลาเปิดเช็คอีเมล 2 นาที
+          alert("✉️ สั่งส่งรหัส OTP เรียบร้อยแล้ว! ระบบส่งเลขยืนยันไปที่อีเมล " + response.email + " ของคุณ " + response.user.name + " เรียบร้อยครับ");
+        } else {
+          otpBtn.disabled = false;
+          nameError.innerText = "❌ " + response.message;
+          nameError.classList.remove('hidden');
+        }
+      })
+      .catch(err => {
+        loadStatus.classList.add('hidden');
+        otpBtn.disabled = false;
+        alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบความปลอดภัยขององค์กร");
+      });
+    }
+
+    function startCountdown(seconds) {
+      clearInterval(countdownTimer);
+      const textDisplay = document.getElementById('countdownText');
+      const otpBtn = document.getElementById('requestOtpBtn');
+      let timeLeft = seconds;
+      
+      countdownTimer = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(countdownTimer);
+          textDisplay.innerText = "รหัส OTP หมดอายุแล้ว";
+          textDisplay.className = "text-xs font-semibold text-rose-500";
+          otpBtn.disabled = false;
+          otpBtn.innerText = "ขอรหัสใหม่";
+        } else {
+          textDisplay.innerText = `รหัสจะหมดอายุใน (${timeLeft} วินาที)`;
+          textDisplay.className = "text-xs font-semibold text-amber-600";
+          timeLeft--;
+        }
+      }, 1000);
+    }
+
+    // 🔓 STEP 2: ตรวจสอบความถูกต้องของ OTP ตัวจริงบนคลาวด์เพื่อข้ามไปหน้าสืบค้นหลัก
+    function verifyOTP() {
+      const nameInput = document.getElementById('userName').value.trim();
+      const otpKey = document.getElementById('otpKey').value.trim();
+      const otpError = document.getElementById('otpError');
+      const loadStatus = document.getElementById('loadingStatus');
+      const loadingText = document.getElementById('loadingText');
+
+      if (otpKey.length < 6) {
+        otpError.innerText = "❌ กรุณากรอกรหัสเลขหลักให้ครบทั้ง 6 ตัว";
+        otpError.classList.remove('hidden');
+        return;
+      }
+
+      otpError.classList.add('hidden');
+      loadingText.innerText = "กำลังทำการตรวจสอบรหัสกับฐานข้อมูลกลาง...";
+      loadStatus.classList.remove('hidden');
+
+      fetch(webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'verify', name: nameInput, otp: otpKey })
+      })
+      .then(res => res.json())
+      .then(response => {
+        loadStatus.classList.add('hidden');
+        
+        if (response.success) {
+          otpError.classList.add('hidden');
+          clearInterval(countdownTimer);
+          alert("🎉 ยืนยันสิทธิ์ถูกต้องปลอดภัย! ยินดีต้อนรับเข้าสู่ระบบสืบค้นข้อมูลหลัก C.E.M ครับ");
+         // 🚀 สั่ง Redirect วาร์ปไปยังไฟล์ database.html บน Server จริงทันที
+          window.location.href = "./database.html";
+          
+        } else {
+          otpError.innerText = "❌ " + response.message;
+          otpError.classList.remove('hidden');
+        }
+      })
+      .catch(err => {
+        loadStatus.classList.add('hidden');
+        alert("เกิดข้อผิดพลาดในการประมวลผลรหัสผ่าน");
+      });
+    }
+  </script>
+</body>
+</html>
